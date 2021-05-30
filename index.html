@@ -1,23 +1,130 @@
 <!DOCTYPE html>
 <html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Mapping Water Points</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <script src='https://api.mapbox.com/mapbox-gl-js/v1.11.1/mapbox-gl.js'></script>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v1.11.1/mapbox-gl.css' rel='stylesheet'/>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@5/turf.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+    #instructions {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background-color: #fff;
+      padding: 5px 20px 5px 20px;
+      border-radius: 10px;
+      font-family: Lato, sans-serif;
+    }
+
+  </style>
+</head>
+
 <body>
-<h1>My First Web Visualization</h1> 
-<p>This is an interactive visual of the Life Expectancy given the GDP per capita of the continents in the world in 2007. I created it using this <a href="https://towardsdatascience.com/how-to-create-a-plotly-visualization-and-embed-it-on-websites-517c1a78568b">tutorial</a>. </p>
+  <div id="map"></div>
+  <div id="instructions">
+    <h2>🚰 Instructions</h2>
+    <p>Click anywhere on the map to see water sites within a 500m radius. Stand alone water sites will be highlighted in red.</p>
+  </div>
+  <script>
+    // Data showing water points - replace the dummy URL with your own.
+    var url = 'https://github.com/NayantaraB/online-webmap-course/blob/master/studio-week5/data-tutorial/data/Zaatari_refugee_camp_water_simplified.geojson'
 
 
-<!-- replace line with embed code -->    
-    
-<div>
-    <a href="https://plotly.com/~NayantaraB/1/?share_key=9Eay81AAP3AIEtIBQlx1OC" target="_blank" title="gdp_per_cap" style="display: block; text-align: center;"><img src="https://plotly.com/~NayantaraB/1.png?share_key=9Eay81AAP3AIEtIBQlx1OC" alt="gdp_per_cap" style="max-width: 100%;width: 600px;"  width="600" onerror="this.onerror=null;this.src='https://plotly.com/404.png';" /></a>
-    <script data-plotly="NayantaraB:1" sharekey-plotly="9Eay81AAP3AIEtIBQlx1OC" src="https://plotly.com/embed.js" async></script>
-</div>
+    mapboxgl.accessToken = 'pk.eyJ1IjoibmF5YW50YXJhYiIsImEiOiJja3BhaWhtb3EwcHdzMnhueGM3OG1mZXQ0In0.9gddhrF1f67gQaZbGRWlyw';
+    var map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/satellite-v9', // imagery basemap - you may choose something else
+      center: [36.3295, 32.2963], // starting position at Zaatari Camp
+      zoom: 14, // starting zoom
+    });
 
-<p>The chart shows that life expectancy is an increasing function of GDP per capita. The colors of the circles represent the continents while the size is the population. GDP per capita is one of the many measures to judge the well-being of an economy and is the total income of a country normalized by its population, while the life expectancy is measured in number of years a person lives in a country. </p>  
-<p>By clicking on the figure, a page opens to the interactive diagram which shows that Japan has the highest life expectancy while the Democratic Republic of Congo (DRC) has the lowest. This is expected since an average person’s makes 30,000 local currency units (LCU) more in Japan compared to DRC.  </p> 
-    
-<p>This is the online database of GDP per capita and Life Expectancy for all continents, weighted by the population, in 2007. </p>    
-<iframe width="900" height="800" frameborder="0" scrolling="no" src="//plotly.com/~NayantaraB/0.embed"></iframe>
+    map.on('load', function () {
 
-    
+      //Map layers go in here!
+map.addLayer({
+  id: 'OSM-water',
+  source: {
+    type: 'geojson',
+    data: url
+  },
+  type: 'circle',
+  paint: {
+    'circle-color': '#83e8fc',
+    'circle-radius': 3,
+    'circle-opacity': 1,
+    'circle-stroke-width': 1,
+    'circle-stroke-color': '#0557fa',
+  }
+});
+
+// When the map has finished loading, add a new layer that will be empty
+// at first, but will eventually house our confirmed water sites.
+map.addLayer({
+  id: 'selected-water',
+  source: {
+    type: 'geojson',
+    data: { "type": "FeatureCollection", "features": [] }
+  },
+  type: 'circle',
+  paint: {
+    'circle-color': 'red',
+    'circle-radius': 3
+     }
+});
+
+// Draw the search radius on the map
+map.addLayer({
+  id: 'search-radius',
+  source: {
+    type: 'geojson',
+    data: { "type": "FeatureCollection", "features": [] }
+  },
+  type: 'fill',
+  paint: {
+    'fill-color': '#fcf683',
+    'fill-opacity': 0.5
+  }
+});
+
+
+    //Click event goes here!
+
+map.on('click', function(e) {
+      var eventLngLat = [e.lngLat.lng, e.lngLat.lat];
+      console.log(eventLngLat)
+    });
+
+    //makeRadius function goes here!
+function makeRadius(lngLatArray, radiusInMeters){}
+var buffered = turf.buffer(point, radiusInMeters, { units: 'meters' });
+  return buffered;
+function makeRadius(lngLatArray, radiusInMeters) {
+    var point = turf.point(lngLatArray);
+    var buffered = turf.buffer(point, radiusInMeters, { units: 'meters' });
+    return buffered;
+  }
+var searchRadius = makeRadius(eventLngLat, 500);
+map.getSource('search-radius').setData(searchRadius);
+
+    //spatialJoin function goes here!
+
+  </script>
+
 </body>
+
 </html>
