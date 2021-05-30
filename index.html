@@ -122,6 +122,19 @@ var searchRadius = makeRadius(eventLngLat, 500);
 map.getSource('search-radius').setData(searchRadius);
 
     //spatialJoin function goes here!
+function spatialJoin(sourceLayer, filterFeature) {
+  // Need this line to specify the array since map.getSource in the click event doesn't do this.
+  sourceGeoJSON = map.querySourceFeatures(sourceLayer);
+  // Loop through all the features in the source geojson and return the ones that
+  // are inside the filter feature (buffered radius) and are confirmed landing sites
+  var joined = sourceGeoJSON.filter(function (feature) {
+    return turf.booleanPointInPolygon(feature, filterFeature) && feature.properties.type === 'Free_standing';
+  });
+
+  return joined;
+};
+var featuresInBuffer = spatialJoin('OSM-water', searchRadius);
+map.getSource('selected-water').setData(turf.featureCollection(featuresInBuffer));
 
   </script>
 
